@@ -79,7 +79,8 @@ docker images
 > **Screenshot 2:** Take a screenshot showing `docker ps -a` and
 > `docker images` output.
 >
-> `[insert screenshot]`
+> <img width="916" height="761" alt="image" src="https://github.com/user-attachments/assets/14181250-8ad3-46e8-a6d3-269ed24efc7a" />
+
 
 ### Step 2 – Run an nginx Webserver
 
@@ -109,13 +110,15 @@ docker system df
 **Question 1.1:** The flag `-d` starts the container in detached mode.
 What happens without `-d`, and why is detached mode useful for a web server?
 
-> *Your answer:*
+> -d, the container runs in your terminal, and closing the terminal stops the server.
+> Detached mode is useful because it lets the web server run in the background while you continue typing other commands.
 
 **Question 1.2:** `-p 8080:80` maps host port 8080 to container port 80.
 Which port is the application actually listening on inside the container?
 What would `-p 9000:80` change?
 
-> *Your answer:*
+> The application is listening on port 80 inside the container.
+> Changing it to -p 9000:80 means you would access the website using port 9000 on your computer instead of 8080.
 
 ---
 
@@ -161,7 +164,8 @@ exit
 > **Screenshot 3:** Take a screenshot showing the `docker build` output and
 > the commands run inside the container.
 >
-> `[insert screenshot]`
+> <img width="1849" height="792" alt="image" src="https://github.com/user-attachments/assets/bdb85921-03e2-4956-9b66-08872a33386a" />
+
 
 ### Step 4 – Commit
 
@@ -177,14 +181,16 @@ git push -u origin main
 `apt-get install`, and `rm -rf /var/lib/apt/lists/*` in a single line?
 What would happen to the image size if these were three separate `RUN` lines?
 
-> *Your answer:*
+> Every RUN command creates a new, permanent layer in the Docker image.
+> Combining them ensures the temporary installation files are deleted before the layer is saved.
+> If they were three separate lines, the junk files would get permanently locked into an earlier layer, making the final image much larger
 
 **Question 2.2:** `EXPOSE 80` in a Dockerfile does **not** actually open port
 80. What does it do, and what is required at `docker run` time to actually
 forward a port?
 
-> *Your answer:*
-
+> EXPOSE 80 is just documentation for other developers—it simply states which port the container intends to use.
+> To actually open and forward the port, you must use the -p flag (like -p 8080:80) when typing the docker run command
 ---
 
 ## 3 – The Persistence Problem
@@ -224,7 +230,8 @@ docker exec -it pg psql -U postgres -c "SELECT * FROM test;"
 
 > **Screenshot 4:** Take a screenshot showing the error message.
 >
-> `[insert screenshot]`
+> <img width="1441" height="509" alt="image" src="https://github.com/user-attachments/assets/0c0cfaa5-cdd9-4dc3-ae2d-989ba89dc355" />
+
 
 ### Questions for Section 3
 
@@ -232,13 +239,15 @@ docker exec -it pg psql -U postgres -c "SELECT * FROM test;"
 `postgres:16` still exists on your machine. Why does recreating a container
 from the same image not restore the data?
 
-> *Your answer:*
+> An image is just a read-only template. Any new data you create is stored in the container's
+> temporary storage layer, which is permanently destroyed the moment the container is removed.
 
 **Question 3.2:** `docker stop` sends SIGTERM and waits for the process to
 exit cleanly. `docker kill` sends SIGKILL immediately. Why is `docker stop`
 preferred for a database container?
 
-> *Your answer:*
+> docker stop gives the database time to safely save its data and close files properly.
+> docker kill forces an instant shutdown, which can corrupt the database and cause permanent data loss.
 
 ---
 
@@ -288,7 +297,9 @@ docker volume inspect pg_data
 > **Screenshot 5:** Take a screenshot showing the `SELECT` result after
 > container recreation, and the `docker volume inspect` output.
 >
-> `[insert screenshot]`
+> <img width="1413" height="873" alt="image" src="https://github.com/user-attachments/assets/42c1ef48-3da8-4091-a1ae-fcbce254d2b4" />
+
+
 
 ### Step 3 – Clean Up
 
@@ -303,13 +314,18 @@ docker volume rm pg_data
 the host filesystem. Why is it still recommended to use named volumes instead
 of bind-mounting that path directly with `-v /var/lib/docker/volumes/...`?
 
-> *Your answer:*
+> Named volumes are fully managed by Docker, which automatically handles file permissions and ensures they work perfectly on any operating system.
+> If you use a direct host path, you can easily run into permission errors,
+> and it might break if you move your project to a different computer
 
 **Question 4.2:** You want to back up the database. Which `docker` command
 lets you copy files out of a running container, and how would you copy the
 volume contents to a `.tar.gz` archive on the host?
 
-> *Your answer:*
+> The docker cp command lets you copy files out of a container. To create a .tar.gz archive, you would first compress the folder inside the container:
+> docker exec pg tar -czf /backup.tar.gz /var/lib/postgresql/data
+> And then copy that file to your host machine:
+> docker cp pg:/backup.tar.gz .
 
 ---
 
@@ -337,7 +353,8 @@ docker run --rm -it postgres:16 \
 
 > **Screenshot 6:** Take a screenshot showing the connection error.
 >
-> `[insert screenshot]`
+> <img width="1311" height="376" alt="image" src="https://github.com/user-attachments/assets/03b8555a-c80e-4260-b6cc-88c50b5fe4ac" />
+
 
 ### Step 2 – Fix It With a Custom Bridge Network
 
@@ -378,13 +395,15 @@ docker volume rm pg_data
 the default bridge. Why can containers on the default bridge **not** resolve
 each other by name, while containers on a user-defined bridge can?
 
-> *Your answer:*
+> The default bridge network is an older, legacy feature that does not include an automatic DNS server.
+> User-defined networks have a built-in DNS server that automatically translates container names into IP addresses for you.
 
 **Question 5.2:** You could find the IP address of the `pg` container with
 `docker inspect` and hard-code it. Why is using the container name as a
 hostname strongly preferable?
 
-> *Your answer:*
+> Docker assigns IP addresses dynamically, meaning a container's IP address can change every time it is stopped and restarted.
+> Using the container name ensures the connection always works automatically, even if the underlying IP address changes.
 
 ---
 
@@ -501,7 +520,8 @@ curl http://localhost:8000/studenten
 > **Screenshot 7:** Take a screenshot showing `docker compose ps` and the
 > `curl /` response.
 >
-> `[insert screenshot]`
+> <img width="1920" height="405" alt="image" src="https://github.com/user-attachments/assets/3e876c6b-64d9-4d49-9eaf-0584d957d5d5" />
+
 
 ### Step 5 – Observe Compose Networking
 
