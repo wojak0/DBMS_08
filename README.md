@@ -53,7 +53,8 @@ docker compose version
 
 > **Screenshot 1:** Take a screenshot showing both version outputs.
 >
-> `[insert screenshot]`
+> <img width="892" height="154" alt="image" src="https://github.com/user-attachments/assets/3ae3c426-4f2b-4710-b4f5-1605e35faad2" />
+
 
 ---
 
