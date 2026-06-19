@@ -556,13 +556,16 @@ git push -u origin main
 starts before `api`. Does it guarantee that PostgreSQL is **ready to accept
 connections** when the API starts? What is the correct way to handle this?
 
-> *Your answer:*
+> No it only means the container has started, but the database inside might still be loading.
+> The correct way to handle this is to add a healthcheck in your docker-compose.yml file to wait until the database is fully ready to accept connections.
 
 **Question 6.2:** The `api` service uses `volumes: - ./api:/app` (a bind
 mount). What is the advantage of this during development compared to
 `COPY`-ing the code into an image at build time?
 
-> *Your answer:*
+> A bind mount links your local folder directly into the container.
+> The main advantage is that any changes you save to your code update instantly in the container,
+> without needing to rebuild the entire Docker image every time you make a change.
 
 ---
 
@@ -634,7 +637,8 @@ curl http://localhost:8000/studenten
 > **Screenshot 8:** Take a screenshot showing the `curl /studenten` response
 > with all four rows.
 >
-> `[insert screenshot]`
+> <img width="1920" height="373" alt="image" src="https://github.com/user-attachments/assets/906c7851-82b1-473c-a555-1404540126a6" />
+
 
 ### Step 4 – Commit
 
@@ -650,13 +654,17 @@ git push
 `init.sql`, and run `docker compose up -d` again. The schema change does
 **not** appear in the database. Why not, and how do you force re-initialisation?
 
-> *Your answer:*
+> The init.sql script only runs automatically if the database volume is completely empty.
+> Because you didn't use -v, your old database volume was saved, so Docker saw existing data and skipped the script.
+> To force it to run again, you must delete the old data volume by running docker compose down -v first
 
 **Question 7.2:** `GENERATED ALWAYS AS IDENTITY` is used instead of
 `SERIAL`. What is the practical difference? Which one is the modern
 SQL-standard approach?
 
-> *Your answer:*
+> SERIAL is an older, PostgreSQL-specific feature that allows you to manually insert an ID, which can easily break your auto-numbering sequence.
+> GENERATED ALWAYS AS IDENTITY is the modern SQL standard approach because it strictly blocks you from manually inserting IDs,
+> keeping your database much safer from numbering errors.
 
 ---
 
@@ -740,7 +748,8 @@ git push
 > **Screenshot 9:** Take a screenshot showing `git status` confirming
 > `.env` is not staged, and the working `curl` response.
 >
-> `[insert screenshot]`
+> <img width="1787" height="921" alt="image" src="https://github.com/user-attachments/assets/9808c115-5333-434a-9241-15129d676e58" />
+
 
 ### Questions for Section 8
 
@@ -749,14 +758,16 @@ git push
 What is the standard practice to document which variables are required
 without committing the actual secrets?
 
-> *Your answer:*
+> The standard practice is to create a file named .env.example or .env.template and commit it to Git.
+> This file lists all the required variable names but leaves the actual passwords blank (for example, POSTGRES_PASSWORD= ).
+> This tells your teammate exactly what variables they need to fill out on their own computer
 
 **Question 8.2:** Even with `.env` excluded from git, the password is still
 stored in plain text on disk. Name one mechanism Docker provides for
 production-grade secret management that avoids plain-text env files entirely.
 
-> *Your answer:*
-
+> Docker Secrets. This is a built-in Docker feature (primarily used with Docker Swarm) that encrypts your passwords and securely injects them directly into
+> the container's memory, completely avoiding plain-text files on the hard drive.
 ---
 
 ## 9 – Multi-Stage Build
@@ -836,7 +847,9 @@ curl http://localhost:8000/studenten
 > **Screenshot 10:** Take a screenshot showing `docker images` with the
 > final image size and the working `curl` response.
 >
-> `[insert screenshot]`
+> <img width="1882" height="423" alt="image" src="https://github.com/user-attachments/assets/a04b9cd9-82ca-4831-bc05-0d0923e1e038" />
+
+
 
 ### Step 5 – Commit
 
@@ -852,13 +865,17 @@ git push
 environment from the builder stage. The final image does not contain `pip` or
 `uv`. What security advantage does this provide?
 
-> *Your answer:*
+> It reduces the "attack surface." If a hacker somehow breaks into your container,
+> they will not be able to easily download and install malicious software or hacking tools because the package managers (pip or uv) are completely missing from the environment.
 
 **Question 9.2:** The builder stage installs dependencies from `pyproject.toml`
 before copying the application code. Why does this ordering improve build
 cache efficiency when you frequently change only `main.py`?
 
-> *Your answer:*
+
+> Docker saves (caches) each step of the build. 
+> By installing dependencies first, Docker only downloads them once. When you edit your main.py code later,
+> Docker just reuses the cached dependencies instead of re-downloading them every single time, which makes your builds incredibly fast
 
 ---
 
@@ -900,8 +917,8 @@ docker compose exec api whoami
 
 > **Screenshot 11:** Take a screenshot showing `docker compose exec api whoami`
 > returning `appuser`.
->
-> `[insert screenshot]`
+><img width="1066" height="106" alt="image" src="https://github.com/user-attachments/assets/19020ff2-8523-49fa-b420-0ade64f8035d" />
+
 
 ### Step 3 – Commit
 
@@ -916,13 +933,13 @@ git push
 **Question 10.1:** The `USER appuser` instruction is placed after
 `COPY . .`. Why would placing it *before* `COPY` cause a permission problem?
 
-> *Your answer:*
+> root would own the copied files, completely locking appuser out from reading or running them.
 
 **Question 10.2:** State the **Principle of Least Privilege** in one
 sentence, and name one other place in a typical web application stack
 (outside of containers) where this principle is applied.
 
-> *Your answer:*
+> Only give the absolute minimum permissions needed to do a job, FOR EXAMPLE A web app can read a database, but cannot delete it.
 
 ---
 
@@ -933,19 +950,20 @@ Section 6 of the lecture shows a Dockerfile that runs both PostgreSQL and
 FastAPI in a single container. Describe two concrete operational problems
 this causes in a production environment.
 
-> *Your answer:*
+> Scaling: Can't scale API and DB independently. //// Stability: One crash kills the whole app.
 
 **Question B – Volume vs. Bind Mount:**  
 Compare named volumes and bind mounts. When is each type appropriate?
 
-> *Your answer:*
+> Volumes: Best for production data; managed by Docker. ////  Bind Mounts: Best for dev code; links local files to containers.
+> 
 
 **Question C – Compose and Reproducibility:**  
 A colleague says: "I can just write the `docker run` commands in a shell
 script — why do I need `docker-compose.yml`?" Give two specific advantages
 of Compose over a shell script of `docker run` commands.
 
-> *Your answer:*
+> Readable: Structured YAML is easier to manage than complex scripts. ////  Easy: Single command controls everything (start/stop/clean up).
 
 **Question D – The Complete Chain:**  
 You have now built and containerised the full stack: PostgreSQL in a
@@ -954,8 +972,7 @@ non-root image → both orchestrated by Docker Compose with credentials
 in `.env`. Describe in two sentences what each layer contributes to
 **portability** and **security**.
 
-> *Your answer:*
-
+> Portability: Code defines everything, so it runs the same everywhere.  ////  Security: Secrets, non-root users, and small images lock down your app.
 ---
 
 ## Further Reading
